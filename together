@@ -1,0 +1,150 @@
+CREATE database pokemondata;
+
+
+
+-- Creación de tablas
+CREATE TABLE Pokemon (
+    pokemon_id INT PRIMARY KEY IDENTITY(1,1),
+    name VARCHAR(50) NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    ability VARCHAR(50) NOT NULL,
+    hp INT NOT NULL,
+    attack INT NOT NULL,
+    defense INT NOT NULL,
+    speed INT NOT NULL
+);
+
+CREATE TABLE Trainers (
+    trainer_id INT PRIMARY KEY IDENTITY(1,1),
+    name VARCHAR(50) NOT NULL,
+    age INT NOT NULL,
+    city VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE TrainerPokemon (
+    trainer_pokemon_id INT PRIMARY KEY IDENTITY(1,1),
+    trainer_id INT,
+    pokemon_id INT,
+    FOREIGN KEY (trainer_id) REFERENCES Trainers(trainer_id),
+    FOREIGN KEY (pokemon_id) REFERENCES Pokemon(pokemon_id)
+);
+
+CREATE TABLE Battles (
+    battle_id INT PRIMARY KEY IDENTITY(1,1),
+    trainer1_id INT,
+    trainer2_id INT,
+    pokemon1_id INT,
+    pokemon2_id INT,
+    date DATE NOT NULL,
+    result VARCHAR(50) NOT NULL,
+    FOREIGN KEY (trainer1_id) REFERENCES Trainers(trainer_id),
+    FOREIGN KEY (trainer2_id) REFERENCES Trainers(trainer_id),
+    FOREIGN KEY (pokemon1_id) REFERENCES Pokemon(pokemon_id),
+    FOREIGN KEY (pokemon2_id) REFERENCES Pokemon(pokemon_id)
+);
+
+-- Inserción de datos
+INSERT INTO Pokemon (name, type, ability, hp, attack, defense, speed)
+VALUES ('Pikachu', 'Electric', 'Static', 35, 55, 40, 90);
+
+INSERT INTO Pokemon (name, type, ability, hp, attack, defense, speed)
+VALUES ('Charmander', 'Fire', 'Blaze', 39, 52, 43, 65);
+
+INSERT INTO Trainers (name, age, city)
+VALUES ('Ash', 10, 'Pallet Town');
+
+INSERT INTO Trainers (name, age, city)
+VALUES ('Misty', 12, 'Cerulean City');
+
+INSERT INTO TrainerPokemon (trainer_id, pokemon_id)
+VALUES (1, 1);  -- Ash tiene un Pikachu
+
+INSERT INTO TrainerPokemon (trainer_id, pokemon_id)
+VALUES (2, 2);  -- Misty tiene un Charmander
+
+INSERT INTO Battles (trainer1_id, trainer2_id, pokemon1_id, pokemon2_id, date, result)
+VALUES (1, 2, 1, 2, '2024-07-16', 'Ash wins');
+
+-- Operaciones CRUD
+-- Crear (Create)
+INSERT INTO Pokemon (name, type, ability, hp, attack, defense, speed)
+VALUES ('Bulbasaur', 'Grass/Poison', 'Overgrow', 45, 49, 49, 45);
+
+-- Leer (Read)
+SELECT * FROM Pokemon;
+SELECT * FROM Trainers;
+
+-- Actualizar (Update)
+UPDATE Pokemon
+SET hp = 60
+WHERE name = 'Pikachu';
+
+UPDATE Trainers
+SET city = 'Viridian City'
+WHERE name = 'Ash';
+
+-- Eliminar (Delete)
+DELETE FROM Pokemon
+WHERE name = 'Bulbasaur';
+
+DELETE FROM Trainers
+WHERE name = 'Misty';
+
+-- Relación entre Entrenadores y Pokémon (ya creada con TrainerPokemon)
+
+-- Tabla de Batallas (ya creada como Battles)
+
+-- Operaciones Multi-Table
+-- Mostrar información detallada sobre Pokémon y sus entrenadores
+SELECT Trainers.name AS Trainer, Pokemon.name AS Pokemon
+FROM TrainerPokemon
+JOIN Trainers ON TrainerPokemon.trainer_id = Trainers.trainer_id
+JOIN Pokemon ON TrainerPokemon.pokemon_id = Pokemon.pokemon_id;
+
+-- Mostrar información sobre las batallas
+SELECT t1.name AS Trainer1, p1.name AS Pokemon1, t2.name AS Trainer2, p2.name AS Pokemon2, Battles.date, Battles.result
+FROM Battles
+JOIN Trainers t1 ON Battles.trainer1_id = t1.trainer_id
+JOIN Trainers t2 ON Battles.trainer2_id = t2.trainer_id
+JOIN Pokemon p1 ON Battles.pokemon1_id = p1.pokemon_id
+JOIN Pokemon p2 ON Battles.pokemon2_id = p2.pokemon_id;
+
+-- Eliminación de un Entrenador y sus Relaciones
+BEGIN TRANSACTION;
+
+-- Paso 1: Eliminar registros relacionados en Battles
+DELETE FROM Battles
+WHERE trainer1_id = (SELECT trainer_id FROM Trainers WHERE name = 'Misty');
+
+DELETE FROM Battles
+WHERE trainer2_id = (SELECT trainer_id FROM Trainers WHERE name = 'Misty');
+
+-- Paso 2: Eliminar registros relacionados en TrainerPokemon
+DELETE FROM TrainerPokemon
+WHERE trainer_id = (SELECT trainer_id FROM Trainers WHERE name = 'Misty');
+
+-- Paso 3: Eliminar el entrenador de la tabla Trainers
+DELETE FROM Trainers
+WHERE name = 'Misty';
+
+COMMIT TRANSACTION;
+
+-- Eliminación de un Pokémon y sus Relaciones
+BEGIN TRANSACTION;
+
+-- Paso 1: Eliminar registros relacionados en Battles
+DELETE FROM Battles
+WHERE pokemon1_id = (SELECT pokemon_id FROM Pokemon WHERE name = 'Charmander');
+
+DELETE FROM Battles
+WHERE pokemon2_id = (SELECT pokemon_id FROM Pokemon WHERE name = 'Charmander');
+
+-- Paso 2: Eliminar registros relacionados en TrainerPokemon
+DELETE FROM TrainerPokemon
+WHERE pokemon_id = (SELECT pokemon_id FROM Pokemon WHERE name = 'Charmander');
+
+-- Paso 3: Eliminar el Pokémon de la tabla Pokemon
+DELETE FROM Pokemon
+WHERE name = 'Charmander';
+
+COMMIT TRANSACTION;
